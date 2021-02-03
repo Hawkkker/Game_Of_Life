@@ -1,21 +1,22 @@
 ﻿using System;
 using System.Threading;
 using System.Diagnostics;
-//using System.Timers;
+using System.Text;
 
 namespace Jeu_de_la_vie
 {
     class Program
     {
-        const int rows = 30;
+        const int rows = 25;
         const int cols = 100;
-
+        static Random rand = new Random();
+        
         public static void Main(string[] args)
         {
             var grid = new Boolean[rows, cols];
             grid = Filler(grid);
             int day = 0;
-            Thread.Sleep(5000);
+            //Thread.Sleep(5000);
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             while (true)
@@ -31,24 +32,24 @@ namespace Jeu_de_la_vie
                 //Printer(grid);
                 Info(day, grid, stopwatch);
                 Thread.Sleep(50);
-                Console.Clear();
+                Console.SetCursorPosition(0, 0);
                 day += 1;
             }
         }
 
         public static void Info(int day, bool[,] grid, Stopwatch stopwatch)
         {
-            int nb_alive = 0;
+            int nbAlive = 0;
             for (int row = 0; row < rows; row++)
             {
                 for (int col = 0; col < cols; col++)
                 {
                     if (grid[row, col])
-                        nb_alive += 1;
+                        nbAlive += 1;
                 }
             }
-            Console.Write("\n\nJour n°" + day + '\n');
-            Console.Write("Cellules vivantes : " + nb_alive + '\n');
+            Console.Write("\nJour n°" + day + '\n');
+            Console.Write("Cellules vivantes : " + nbAlive + '\n');
             Console.WriteLine("Temps écoulé : {0}", stopwatch.Elapsed);
         }
 
@@ -92,8 +93,7 @@ namespace Jeu_de_la_vie
             {
                 for (int col = 0; col < cols; col++)
                 {
-                    Random r = new Random();
-                    int rnd_num = r.Next(2);
+                    int rnd_num = rand.Next(2);
                     if (rnd_num == 1)
                     { 
                         grid[row, col] = true;
@@ -105,22 +105,25 @@ namespace Jeu_de_la_vie
 
         private static void Printer(bool[,] grid)
         {
+            StringBuilder sb = new StringBuilder();
             for (int row = 0; row < rows; row++)
             {
-                string line = "";
+                //string line = string.Empty;
                 for (int col = 0; col < cols; col++)
                 {
                     if (!grid[row, col])
                     {
-                        line += ' ';
+                        sb.Append(' ');
                     }
                     else
                     {
-                        line += '█';
+                        sb.Append('█');
                     }
                 }
-                Console.WriteLine(line);
+                sb.Append('\n');
+                //Console.WriteLine(line);
             }
+            Console.Write(sb.ToString());
         }
     }
 }
