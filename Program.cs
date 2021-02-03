@@ -5,123 +5,167 @@ using System.Text;
 
 namespace Jeu_de_la_vie
 {
-    class Program
+    enum Status
     {
-        const int rows = 25;
-        const int cols = 100;
-        static Random rand = new Random();
-        
-        public static void Main(string[] args)
+        Alive = 0,
+        Dead = 1
+    }
+
+    class Cell
+    {
+        private Status status;
+        private int posX;
+        private int posY;
+        private Cell[] neighbors;
+
+        public Cell(int X, int Y, Status rnd)
         {
-            var grid = new Boolean[rows, cols];
-            grid = Filler(grid);
-            int day = 0;
-            //Thread.Sleep(5000);
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            while (true)
-            {
-                Printer(grid);
-                for (int row = 0; row < rows; row++)
-                {
-                    for (int col = 0; col < cols; col++)
-                    {
-                        grid[row, col] = Life(grid, row, col);
-                    }
-                }
-                //Printer(grid);
-                Info(day, grid, stopwatch);
-                Thread.Sleep(50);
-                Console.SetCursorPosition(0, 0);
-                day += 1;
-            }
+            posX = X;
+            posY = Y;
+            status = rnd;
+            neighbors = new Cell[9];
         }
 
-        public static void Info(int day, bool[,] grid, Stopwatch stopwatch)
+        public void setNeighbors(int X, int Y)
         {
-            int nbAlive = 0;
-            for (int row = 0; row < rows; row++)
-            {
-                for (int col = 0; col < cols; col++)
-                {
-                    if (grid[row, col])
-                        nbAlive += 1;
-                }
-            }
-            Console.Write("\nJour n°" + day + '\n');
-            Console.Write("Cellules vivantes : " + nbAlive + '\n');
-            Console.WriteLine("Temps écoulé : {0}", stopwatch.Elapsed);
-        }
-
-        public static bool Check(int posx, int posy, int row, int col)
-        {
-            if (row + posx > rows - 1 || row + posx < 0 || col + posy > cols - 1 || col + posy < 0)
-                return true;
-            else
-                return false;
-        }
-
-        public static bool Life(bool[,] grid, int row, int col)
-        {
-            int neighbors = 0;
+            int i = 0;
             for (int posx = -1; posx <= 1; posx++)
             {
                 for (int posy = -1; posy <= 1; posy++)
                 {
-                    //Console.WriteLine("posx : " + posx + " posy : " + posy);
-                    if ((posx == 0 && posy == 0) || Check(posx, posy, row, col))
-                        continue;
-                    if (grid[row + posx, col + posy])
+                    if ((posx == 0 && posy == 0) || Grid.Check(posx, posy, X, Y))
                     {
-                        neighbors += 1;
+                        neighbors[i] = null;
+                        i += 1;
+                        continue;
                     }
+                    Cell cell = Grid.getCell(X + posx, Y + posy);
+                    if (cell is Cell)
+                        neighbors[i] = cell;
+                    else
+                        neighbors[i] = null;
+                    i += 1;
                 }
             }
-            //Console.WriteLine("row : " + row + " col : " + col);
-            //Console.WriteLine("None : " + none + " Neightbors : " + neighbors);
-            if (neighbors == 3 && !grid[row, col])
-                return true;
-            else if ((neighbors == 2 || neighbors == 3) && grid[row, col])
-                return true;
-            else
-                return false;
         }
 
-        public static bool[,] Filler(bool[,] grid)
+        public void nextTurn()
         {
+            int nbAlive = Array.FindAll(neighbors, el => el != null && el.isAlive() == Status.Alive).Length;
+            if (isAlive() == Status.Alive && (nbAlive == 2 || nbAlive == 3))
+                status = Status.Alive;
+            else if (isAlive() == Status.Dead && nbAlive == 3)
+                status = Status.Alive;
+            else
+                status = Status.Dead;
+        }
+
+        public int getX()
+        {
+            return posX;
+        }
+
+        public int getY()
+        {
+            return posY;
+        }
+
+        public Status isAlive()
+        {
+            return status;
+        }
+    }
+
+    class Grid
+    {
+        static int rows = 25;
+        static int cols = 100;
+        static Cell[] cells;
+
+        public static void Main(string[] args)
+        {
+            cells = new Cell[rows * cols];
+            int day = 0;
+            int i = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            Status status;
+            Random rand = new Random();
             for (int row = 0; row < rows; row++)
             {
                 for (int col = 0; col < cols; col++)
                 {
                     int rnd_num = rand.Next(2);
                     if (rnd_num == 1)
-                    { 
-                        grid[row, col] = true;
-                    }
+                        status = Status.Alive;
+                    else
+                        status = Status.Dead;
+                    cells[i] = new Cell(row, col, status);
+                    i += 1;
                 }
             }
-            return grid;
+            foreach (Cell cell in cells)
+            {
+                cell.setNeighbors(cell.getX(), cell.getY());
+            }
+            while (true)
+            {
+                Printer();
+                foreach (var cell in cells)
+                {
+                    cell.nextTurn();
+                }
+                Info(day, stopwatch);
+                Thread.Sleep(50);
+                Console.SetCursorPosition(0, 0);
+                day += 1;
+            }
         }
 
-        private static void Printer(bool[,] grid)
+        private static void Info(int day, Stopwatch stopwatch)
+        {
+            int nbAlive = 0;
+            foreach (var cell in cells)
+            {
+                if (cell.isAlive() == Status.Alive)
+                    nbAlive += 1;
+            }
+            Console.Write("\nJour n°" + day + '\n');
+            Console.Write("Cellules vivantes : " + nbAlive + '\n');
+            Console.WriteLine("Temps écoulé : {0}", stopwatch.Elapsed);
+        }
+        public static Cell getCell(int X, int Y)
+        {
+            Cell cell = Array.Find(cells, el => el != null && el.getX() == X && el.getY() == Y);
+            if (cell is Cell)
+                return cell;
+            else
+                return null;
+        }
+
+        public static bool Check(int posx, int posy, int X, int Y)
+        {
+            if (X + posx > rows - 1 || X + posx < 0 || Y + posy > cols - 1 || Y + posy < 0)
+                return true;
+            else
+                return false;
+        }
+
+        private static void Printer()
         {
             StringBuilder sb = new StringBuilder();
-            for (int row = 0; row < rows; row++)
+            int line = 0;
+            for (int i = 0; i < rows * cols; i++)
             {
-                //string line = string.Empty;
-                for (int col = 0; col < cols; col++)
+                if (cells[i].getX() > line)
                 {
-                    if (!grid[row, col])
-                    {
-                        sb.Append(' ');
-                    }
-                    else
-                    {
-                        sb.Append('█');
-                    }
+                    line += 1;
+                    sb.Append('\n');
                 }
-                sb.Append('\n');
-                //Console.WriteLine(line);
+                if (cells[i].isAlive() == Status.Alive)
+                    sb.Append('█');
+                else
+                    sb.Append(' ');
             }
             Console.Write(sb.ToString());
         }
